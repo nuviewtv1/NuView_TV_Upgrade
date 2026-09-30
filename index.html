@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NuView TV - Program Guide</title>
+    <style>
+        :root {
+            --bg-dark: #0d0015;
+            --bg-card: #240046;
+            --accent: #7b2ff7;
+            --secondary: #c77dff;
+            --highlight: #e0aaff;
+            --text-main: #f8f9fa;
+            --text-muted: #adb5bd;
+            --live-green: #2ecc71;
+            --border-color: #3c096c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        /* Header & Branding */
+        header {
+            background-color: var(--bg-card);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--accent);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            background: linear-gradient(135deg, var(--accent), var(--secondary));
+            color: white;
+            font-weight: bold;
+            font-size: 1.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            letter-spacing: 2px;
+        }
+
+        .brand-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .clock-container {
+            text-align: right;
+        }
+
+        .sast-label {
+            font-size: 0.8rem;
+            color: var(--secondary);
+            text-transform: uppercase;
+        }
+
+        .live-clock {
+            font-size: 1.25rem;
+            font-weight: bold;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Main Layout */
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        /* Now Playing Banner */
+        .now-playing-banner {
+            background: linear-gradient(90deg, var(--bg-card) 0%, rgba(36,0,70,0.5) 100%);
+            border-left: 4px solid var(--live-green);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .now-playing-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--live-green);
+            font-weight: bold;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .live-indicator {
+            width: 10px;
+            height: 10px;
+            background-color: var(--live-green);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+        }
+
+        .np-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--highlight);
+        }
+        
+        .np-time {
+            font-size: 1.1rem;
+            color: var(--secondary);
+        }
+
+        .np-desc {
+            margin-top: 0.5rem;
+            color: var(--text-muted);
+            max-width: 800px;
+        }
+
+        /* Controls: Search & Tabs */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: rgba(255,255,255,0.05);
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent);
+        }
+
+        .day-tabs {
+            display: flex;
+            overflow-x: auto;
+            gap: 0.5rem;
+            padding-bottom: 0.5rem;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent) var(--bg-dark);
+        }
+        
+        .day-tabs::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        .day-tabs::-webkit-scrollbar-thumb {
+            background-color: var(--accent);
+            border-radius: 3px;
+        }
+
+        .tab-btn {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 120px;
+        }
+
+        .tab-btn:hover {
+            background-color: #320061;
+        }
+
+        .tab-btn.active {
+            background-color: var(--accent);
+            border-color: var(--secondary);
+        }
+
+        .tab-day {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        .tab-date {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        /* Schedule Grid */
+        .schedule-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .show-card {
+            background-color: var(--bg-card);
+            border-radius: 8px;
+            padding: 1.25rem;
+            display: grid;
+            grid-template-columns: 140px 1fr auto;
+            gap: 1.5rem;
+            align-items: center;
+            border-left: 4px solid transparent;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .show-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            background-color: #2a0052;
+        }
+
+        .show-card.is-live {
+            border-left-color: var(--live-green);
+            background: linear-gradient(90deg, #1b3d2b 0%, var(--bg-card) 50%);
+        }
+
+        .show-time {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--highlight);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .show-duration {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: normal;
+        }
+
+        .show-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .show-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .show-desc {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .live-badge {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: var(--live-green);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 0.25rem;
+            align-self: flex-start;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+            background-color: var(--bg-card);
+            border-radius: 8px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            padding: 1rem;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background-color: var(--bg-card);
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 600px;
+            padding: 2rem;
+            position: relative;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: white;
+        }
+
+        .modal-time {
+            color: var(--secondary);
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            color: var(--highlight);
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-desc {
+            color: var(--text-main);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .show-card {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+            .show-time {
+                flex-direction: row;
+                gap: 1rem;
+                align-items: center;
+            }
+            header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+            .clock-container {
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <div class="logo">NV</div>
+            <div class="brand-title">NuView TV Guide</div>
+        </div>
+        <div class="clock-container">
+            <div class="sast-label">Current Time (SAST)</div>
+            <div class="live-clock" id="liveClock">00:00:00</div>
+        </div>
+    </header>
+
+    <main>
+        <div class="now-playing-banner" id="nowPlayingBanner">
+            <!-- Populated via JS -->
+            <div class="now-playing-header">
+                <div class="live-indicator"></div>
+                LIVE NOW
+            </div>
+            <div class="np-title">Loading...</div>
+            <div class="np-time">--:-- - --:--</div>
+            <div class="np-desc">Please wait while the schedule loads.</div>
+        </div>
+
+        <div class="controls">
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search programs by title...">
+            </div>
+            <div class="day-tabs" id="dayTabs">
+                <!-- Populated via JS -->
+            </div>
+        </div>
+
+        <div class="schedule-grid" id="scheduleGrid">
+            <!-- Populated via JS -->
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="showModal">
+        <div class="modal-content">
+            <button class="close-btn" id="closeModal">&times;</button>
+            <div class="modal-time" id="modalTime">--:-- - --:--</div>
+            <h2 class="modal-title" id="modalTitle">Show Title</h2>
+            <div class="modal-desc" id="modalShortDesc" style="font-weight: bold; margin-bottom: 1rem;"></div>
+            <div class="modal-desc" id="modalLongDesc"></div>
+        </div>
+    </div>
+
+    <script>
+        // Raw Data embedded
+        const rawData = `
+DATE=2026-09-25 (Friday)
+00:00-04:00 | LATE NIGHT MOVIES | Settle in for late-night cinema featuring entertaining stories, memorable characters, suspense, drama and action. | Late Night Movies offers a varied selection of films for viewers seeking entertainment after dark. From gripping drama and suspense to action, romance and comedy, each feature delivers memorable characters and engaging storytelling for a relaxed late-night viewing experience.
+04:00-04:30 | MOTO WEEK | Independent car reviews, road tests and motoring news covering new vehicles, performance, technology and safety. | Motor Week gives viewers an informed look at the automotive world through road tests, vehicle reviews and the latest motoring news.
+04:30-05:00 | NAKED SICENCE | Science and technology are explored through fascinating investigations, expert insight and striking real-world evidence. | Naked Science investigates the forces, discoveries and mysteries that shape our world and universe.
+05:00-05:30 | TRAVELS | Explore remarkable destinations, local cultures, food, people and unforgettable experiences from around the world. | Travels takes viewers on an inspiring journey to fascinating destinations near and far.
+05:30-06:00 | Musicals | Enjoy memorable songs, performances and storytelling in a lively celebration of music and entertainment. | Musicals brings together captivating songs, dynamic performances and entertaining storytelling.
+06:00-06:30 | Global News | Stay informed with major international headlines, breaking developments and analysis of events shaping the world. | Global News provides timely coverage of the major stories shaping countries, economies and communities around the world.
+06:30-07:00 | WORKOUT | Accessible exercise routines and practical fitness guidance to help viewers improve strength, mobility, energy and wellbeing. | Workout offers guided exercise sessions designed to help viewers stay active and improve their overall fitness.
+07:00-07:30 | Times To Revive | A faith-based outreach programme inspiring believers to share hope, serve communities and live the message of Christ. | Time to Revive follows believers as they take the Christian message beyond church walls and into local communities.
+07:30-08:00 | Hour Of Mercy | A dedicated time of prayer, worship and biblical encouragement centred on God's mercy, healing and restoration. | Hour of Mercy invites viewers into a focused time of worship, prayer and reflection on God's compassion.
+08:00-08:30 | KIDS CARTOON | Colourful animated adventures entertain young viewers while encouraging imagination, friendship, kindness and positive values. | Kids Cartoon presents fun-filled animated stories created for young audiences.
+08:30-09:00 | CELEB CHAT ROOM | Celebrity guests share candid stories about their careers, creative journeys, personal lives and latest projects. | Celeb Chat Room brings viewers closer to well-known personalities through relaxed and revealing conversations.
+09:00-09:30 | Grand Design | Follow ambitious homebuilders as bold architectural ideas are transformed into extraordinary and highly personal homes. | Grand Designs follows people undertaking ambitious and often challenging homebuilding projects.
+09:30-10:00 | FOOD COURT | Discover foods from across the globe, from local favourites and street dishes to traditional recipes and culinary culture. | Food Court showcases food from across the globe, exploring the flavours, traditions and people behind memorable dishes.
+10:00-10:30 | ARTIN27 | ARTIN27 on NuView TV. | ARTIN27 is part of NuView TV's diverse programming lineup.
+10:30-11:00 | 77 PERCENT | Young Africans discuss the issues, ambitions and realities shaping the continent's growing youth population. | The 77 Percent gives Africa's young majority a platform to share ideas, experiences and aspirations.
+11:00-11:30 | FAITH NATION AND CULTURE | FAITH NATION AND CULTURE on NuView TV. | FAITH NATION AND CULTURE is part of NuView TV's diverse programming lineup.
+11:30-12:00 | MOVIE @ NOON | Enjoy a midday movie featuring engaging stories, memorable characters and entertainment across a variety of genres. | Movie at Noon presents a carefully selected film for relaxed midday viewing.
+12:00-12:30 | NATURES WORLD | Discover extraordinary wildlife, landscapes and natural behaviour through immersive stories from across our living planet. | Nature World transports viewers into remarkable habitats to witness wildlife and natural behaviour up close.
+12:30-13:00 | DRAGON DEN | Entrepreneurs pitch their business ideas to experienced investors, hoping to secure funding, guidance and a valuable partnership. | Dragons' Den gives ambitious entrepreneurs the opportunity to present their products and business plans to a panel of experienced investors.
+13:00-13:30 | Health Care | Practical health information, expert guidance and wellness advice to help viewers make informed everyday choices. | Health Care explores important topics affecting physical and mental wellbeing.
+13:30-14:00 | CIRCUTE | A fast-moving look at technology, innovation, digital culture and the ideas reshaping life around the world. | Circuit explores the people, products and ideas driving change in technology and digital culture.
+14:00-14:30 | MY COMMUNITY CHAT ROOM | An interactive platform for community voices, local issues, practical solutions and shared neighbourhood stories. | My Community Chat Room brings together residents, community leaders and commentators to explore the issues that matter at local level.
+14:30-15:00 | Musicals | Enjoy memorable songs, performances and storytelling in a lively celebration of music and entertainment. | Musicals brings together captivating songs, dynamic performances and entertaining storytelling.
+15:00-15:30 | THE WORLD TODAY | News, interviews and analysis providing context on the political, economic and social stories shaping today's world. | The World Today examines the most important political, economic and social developments of the day.
+15:30-16:00 | BORDER CONTROL | Follow border officers as they protect entry points, inspect travellers and cargo, and enforce immigration and customs laws. | Border Control offers an inside look at the work of officers responsible for securing national entry points.
+16:00-16:30 | FASHION | Explore current fashion trends, designer collections, personal style, beauty and creative expression from Africa and beyond. | Fashion celebrates the creativity, craftsmanship and personalities shaping style today.
+16:30-17:00 | TECK REVIEW | Reviews and explanations of the latest gadgets, digital tools, consumer technology and innovations shaping everyday life. | Tech Review examines the latest gadgets, apps, devices and digital innovations.
+17:00-17:30 | AUTO MAG | Motoring news, vehicle reviews and practical features covering cars, performance, design, safety and automotive lifestyle. | Auto Mag is a magazine-style programme for motorists and car enthusiasts.
+17:30-18:00 | Learn French | Easy, engaging French lessons introduce useful words, expressions, pronunciation and everyday conversation for learners. | Learn French offers accessible lessons for viewers who want to build practical language skills.
+18:00-18:30 | KIDS CARTOON | Colourful animated adventures entertain young viewers while encouraging imagination, friendship, kindness and positive values. | Kids Cartoon presents fun-filled animated stories created for young audiences.
+18:30-19:00 | SO REAL A BOSS | An unscripted look at ambition, leadership and the personal challenges involved in building success and running a business. | So Real: A Boss follows determined personalities as they navigate leadership, entrepreneurship and the pressures of professional life.
+19:00-19:30 | Parternity DNA Show | Parternity DNA Show on NuView TV. | Parternity DNA Show is part of NuView TV's diverse programming lineup.
+19:30-20:00 | SCIENCE MAX | Big experiments turn everyday science into spectacular, fun and educational challenges for curious young minds. | Science Max takes familiar classroom experiments and scales them up into exciting real-world demonstrations.
+20:00-21:00 | DRAMA/COMMEDY | Enjoy entertaining stories that blend memorable characters, everyday situations, humour, emotion and unexpected turns. | Drama/Comedy presents engaging stories that combine emotional moments with humour and relatable situations.
+21:00-21:30 | NEWS | NEWS on NuView TV. | NEWS is part of NuView TV's diverse programming lineup.
+21:30-22:00 | DRAMA | Enjoy entertaining stories that blend memorable characters, everyday situations, humour, emotion and unexpected turns. | Drama presents engaging stories that combine emotional moments with humour and relatable situations.
+22:00-22:30 | SECURITY FORUM | Experts and stakeholders discuss crime prevention, public safety and practical responses to emerging security challenges. | Security Forum brings together informed voices to examine the security issues affecting communities, organisations and nations.
+22:30-00:00 | LATE NIGHT MOVIES | Settle in for late-night cinema featuring entertaining stories, memorable characters, suspense, drama and action. | Late Night Movies offers a varied selection of films for viewers seeking entertainment after dark.
+
+DATE=2026-09-26 (Saturday)
+00:00-04:00 | LATE NIGHT MOVIES | Settle in for late-night cinema. | Late Night Movies offers a varied selection of films.
+04:00-04:30 | JUST JAZZ | Relax with a carefully selected mix of classic and contemporary jazz performances from exceptional musicians. | Just Jazz celebrates the depth, freedom and sophistication of jazz music.
+04:30-05:00 | Musicals | Enjoy memorable songs, performances and storytelling in a lively celebration of music and entertainment. | Musicals brings together captivating songs, dynamic performances and entertaining storytelling.
+05:00-05:30 | 700 club | News, interviews, testimonies, prayer and practical Christian insight addressing life, faith and current issues. | The 700 Club combines news, interviews, inspiring testimonies, prayer and practical Christian teaching.
+05:30-06:00 | Musicals | Enjoy memorable songs, performances and storytelling. | Musicals brings together captivating songs, dynamic performances and entertaining storytelling.
+06:00-06:30 | Global News | Stay informed with major international headlines. | Global News provides timely coverage of the major stories.
+06:30-07:30 | WORKOUT | Accessible exercise routines and practical fitness guidance. | Workout offers guided exercise sessions.
+07:30-08:00 | MORING DEVOTION | Begin the day with Scripture, prayer and uplifting reflection designed to strengthen faith and inspire purposeful living. | Morning Devotion offers a peaceful and encouraging start to the day.
+08:00-10:00 | KIDS CARTOON | Colourful animated adventures entertain young viewers. | Kids Cartoon presents fun-filled animated stories.
+10:00-11:00 | CELEB CHAT ROOM | Celebrity guests share candid stories about their careers. | Celeb Chat Room brings viewers closer to well-known personalities.
+11:00-11:30 | CIRCUTE | A fast-moving look at technology, innovation, digital culture. | Circuit explores the people, products and ideas driving change in technology.
+11:30-12:30 | FOOD COURT | Discover foods from across the globe. | Food Court showcases food from across the globe.
+12:30-14:00 | MOVIE @ NOON | Enjoy a midday movie featuring engaging stories. | Movie at Noon presents a carefully selected film.
+14:00-15:00 | Mythbusters | Popular myths and extraordinary claims are tested through inventive experiments, science, engineering and spectacular demonstrations. | MythBusters uses scientific methods, creative engineering and large-scale experiments to test popular beliefs.
+15:00-15:30 | AUTO MAG | Motoring news, vehicle reviews and practical features. | Auto Mag is a magazine-style programme for motorists.
+15:30-16:00 | THE SMEKS | SUNDAY'S SPECIAL WITH THE SMEKS | Sunday's Special with the Smeks- your home for family fashion, style inspiration, and beautiful everyday moments.
+16:00-16:30 | Bull Riders SPORTS | Experience the speed, courage and high-stakes excitement of competitive bull riding. | Bull Riders Sports brings viewers close to the intense world of competitive bull riding.
+16:30-17:00 | SPORTS BASKETBALL REVIEW | Highlights, analysis and talking points from major basketball games. | Sports Basketball Review brings together key highlights, expert analysis and major talking points.
+17:00-17:30 | MLB Sports | Major League Baseball action, scores, performances, replays and the stories driving the season. | MLB Sports delivers the latest action from Major League Baseball.
+17:30-18:00 | Learn French | Easy, engaging French lessons. | Learn French offers accessible lessons for viewers.
+18:00-18:30 | KIDS CARTOON | Colourful animated adventures entertain young viewers. | Kids Cartoon presents fun-filled animated stories.
+18:30-19:30 | Parternity DNA Show | Parternity DNA Show on NuView TV. | Parternity DNA Show is part of NuView TV's diverse programming lineup.
+19:30-20:30 | DRAMA/COMMEDY | Enjoy entertaining stories. | Drama/Comedy presents engaging stories.
+20:30-21:00 | ARTIN25 | ARTIN25 on NuView TV. | ARTIN25 is part of NuView TV's diverse programming lineup.
+21:00-21:30 | NEWS | NEWS on NuView TV. | NEWS is part of NuView TV's diverse programming lineup.
+21:30-22:30 | DRAMA/COMMEDY | Enjoy entertaining stories. | Drama/Comedy presents engaging stories.
+22:30-00:00 | LATE NIGHT MOVIES | Settle in for late-night cinema. | Late Night Movies offers a varied selection of films.
+
+DATE=2026-09-27 (Sunday)
+00:00-04:00 | LATE NIGHT MOVIES | Settle in for late-night cinema. | Late Night Movies offers a varied selection of films.
+04:00-04:30 | TRAVELS | Explore remarkable destinations, local cultures, food. | Travels takes viewers on an inspiring journey.
+04:30-05:00 | NAKED SICENCE | Science and technology are explored through fascinating investigations. | Naked Science investigates the forces, discoveries and mysteries.
+05:00-05:30 | JUST JAZZ | Relax with a carefully selected mix of classic and contemporary jazz. | Just Jazz celebrates the depth, freedom and sophistication of jazz music.
+05:30-06:00 | MUSICALS | Enjoy memorable songs, performances and storytelling. | Musicals brings together captivating songs, dynamic performances.
+06:00-06:30 | Global News | Stay informed with major international headlines. | Global News provides timely coverage.
+06:30-07:00 | MORNING DEVOTION | Begin the day with Scripture, prayer and uplifting reflection. | Morning Devotion offers a peaceful and encouraging start.
+07:00-07:30 | WORKOUT | Accessible exercise routines and practical fitness guidance. | Workout offers guided exercise sessions.
+07:30-08:00 | Hour Of Mercy | A dedicated time of prayer, worship and biblical encouragement. | Hour of Mercy invites viewers into a focused time of worship.
+08:00-08:30 | Health Care | Practical health information, expert guidance and wellness advice. | Health Care explores important topics affecting physical and mental wellbeing.
+08:30-09:00 | NuView Talk | Open conversation on a wide range of social, cultural and everyday topics relevant to viewers. | NuView Talk is a studio-based discussion programme that gives voice to different perspectives on everyday issues.
+09:00-09:30 | TECK REVIEW | Reviews and explanations of the latest gadgets. | Tech Review examines the latest gadgets, apps, devices and digital innovations.
+09:30-10:00 | Grand Design | Follow ambitious homebuilders. | Grand Designs follows people undertaking ambitious homebuilding projects.
+10:00-10:30 | FOOD COURT | Discover foods from across the globe. | Food Court showcases food from across the globe.
+10:30-11:00 | CELEB CHAT ROOM | Celebrity guests share candid stories. | Celeb Chat Room brings viewers closer to well-known personalities.
+11:00-11:30 | CIRCUTE | A fast-moving look at technology, innovation, digital culture. | Circuit explores the people, products and ideas driving change.
+11:30-12:30 | MOVIE @ NOON | Enjoy a midday movie featuring engaging stories. | Movie at Noon presents a carefully selected film.
+12:30-13:00 | NATURES WORLD | Discover extraordinary wildlife, landscapes. | Nature World transports viewers into remarkable habitats.
+13:00-13:30 | DRAGON DEN | Entrepreneurs pitch their business ideas to experienced investors. | Dragons' Den gives ambitious entrepreneurs the opportunity to present.
+13:30-14:00 | 77 PERCENT | Young Africans discuss the issues, ambitions and realities. | The 77 Percent gives Africa's young majority a platform.
+14:00-14:30 | BORDER CONTROL | Follow border officers as they protect entry points. | Border Control offers an inside look.
+14:30-15:00 | TECK REVIEW | Reviews and explanations of the latest gadgets. | Tech Review examines the latest gadgets, apps, devices.
+15:00-16:00 | Mythbusters | Popular myths and extraordinary claims are tested. | MythBusters uses scientific methods.
+16:00-16:30 | Bull Riders SPORTS | Experience the speed, courage and high-stakes excitement. | Bull Riders Sports brings viewers close to the intense world.
+16:30-17:00 | SPORTS BASKETBALL REVIEW | Highlights, analysis and talking points. | Sports Basketball Review brings together key highlights.
+17:00-17:30 | MLB Sports | Major League Baseball action, scores, performances. | MLB Sports delivers the latest action.
+17:30-18:00 | Learn French | Easy, engaging French lessons. | Learn French offers accessible lessons for viewers.
+18:00-19:00 | KIDS CARTOON | Colourful animated adventures entertain young viewers. | Kids Cartoon presents fun-filled animated stories.
+19:00-19:30 | Parternity DNA Show | Parternity DNA Show on NuView TV. | Parternity DNA Show is part of NuView TV's programming.
+19:30-20:30 | DRAMA/COMMEDY | Enjoy entertaining stories. | Drama/Comedy presents engaging stories.
+20:30-21:00 | NEWS | NEWS on NuView TV. | NEWS is part of NuView TV's programming.
+21:00-22:30 | Movie Night | Enjoy a carefully chosen evening film featuring engaging stories, memorable characters and great entertainment. | Movie Night presents a selected film for a relaxed evening in.
+22:30-00:00 | LATE NIGHT MOVIES | Settle in for late-night cinema. | Late Night Movies offers a varied selection of films.
+
+DATE=2026-09-28 (Monday)
+00:00-04:00 | LATE NIGHT MOVIES | Settle in for late-night cinema. | Late Night Movies offers a varied selection of films.
+04:00-04:30 | MOTO WEEK | Independent car reviews, road tests and motoring news. | Motor Week gives viewers an informed look at the automotive world.
+04:30-05:00 | NAKED SICENCE | Science and technology are explored. | Naked Science investigates the forces, discoveries and mysteries.
+05:00-05:30 | TRAVELS | Explore remarkable destinations. | Travels takes viewers on an inspiring journey.
+05:30-06:00 | Musicals | Enjoy memorable songs, performances. | Musicals brings together captivating songs.
+06:00-06:30 | Global News | Stay informed with major international headlines. | Global News provides timely coverage.
+06:30-07:00 | WORKOUT | Accessible exercise routines and practical fitness guidance. | Workout offers guided exercise sessions.
+07:00-07:30 | Times To Revive | A faith-based outreach programme. | Time to Revive follows believers.
+07:30-08:00 | Hour Of Mercy | A dedicated time of prayer. | Hour of Mercy invites viewers into a focused time.
+08:00-08:30 | KIDS CARTOON | Colourful animated adventures. | Kids Cartoon presents fun-filled animated stories.
+08:30-09:00 | CELEB CHAT ROOM | Celebrity guests share candid stories. | Celeb Chat Room brings viewers closer.
+09:00-09:30 | Grand Design | Follow ambitious homebuilders. | Grand Designs follows people undertaking ambitious projects.
+09:30-10:00 | FOOD COURT | Discover foods from across the globe. | Food Court showcases food.
+10:00-10:30 | ARTIN27 | ARTIN27 on NuView TV. | ARTIN27 is part of NuView TV's programming.
+10:30-11:00 | 77 PERCENT | Young Africans discuss the issues. | The 77 Percent gives Africa's young majority a platform.
+11:00-11:30 | FAITH NATION AND CULTURE | FAITH NATION AND CULTURE on NuView TV. | FAITH NATION AND CULTURE is part of NuView TV's programming.
+11:30-12:00 | MOTO WEEK/MUSICALS | Independent car reviews, road tests and motoring news. | Motor Week gives viewers an informed look.
+12:00-12:30 | MOVIE @ NOON | Enjoy a midday movie. | Movie at Noon presents a carefully selected film.
+12:30-13:00 | Mythbusters | Popular myths and extraordinary claims are tested. | MythBusters uses scientific methods.
+13:00-13:30 | DRAGON DEN | Entrepreneurs pitch their business ideas. | Dragons' Den gives ambitious entrepreneurs the opportunity.
+13:30-14:00 | CIRCUTE | A fast-moving look at technology. | Circuit explores the people, products and ideas.
+14:00-14:30 | FOOD COURT | Discover foods from across the globe. | Food Court showcases food.
+14:30-15:00 | THE WORLD TODAY | News, interviews and analysis. | The World Today examines the most important developments.
+15:00-15:30 | NuView Talk | Open conversation on a wide range of topics. | NuView Talk is a studio-based discussion programme.
+15:30-16:00 | Health Care | Practical health information. | Health Care explores important topics.
+16:00-16:30 | FASHION | Explore current fashion trends. | Fashion celebrates the creativity and personalities.
+16:30-17:00 | AUTO MAG | Motoring news, vehicle reviews. | Auto Mag is a magazine-style programme.
+17:00-17:30 | Learn French | Easy, engaging French lessons. | Learn French offers accessible lessons.
+17:30-18:00 | KIDS CARTOON | Colourful animated adventures. | Kids Cartoon presents fun-filled animated stories.
+18:00-18:30 | SO REAL A BOSS | An unscripted look at ambition. | So Real: A Boss follows determined personalities.
+18:30-19:00 | Parternity DNA Show | Parternity DNA Show on NuView TV. | Parternity DNA Show is part of NuView TV's programming.
+19:00-20:00 | DRAMA/COMMEDY | Enjoy entertaining stories. | Drama/Comedy presents engaging stories.
+20:00-20:30 | SCIENCE MAX | Big experiments turn everyday science into spectacular challenges. | Science Max takes familiar classroom experiments and scales them up.
+20:30-21:00 | NEWS | NEWS on NuView TV. | NEWS is part of NuView TV's programming.
+21:00-22:00 | DRAMA/COMMEDY | Enjoy entertaining stories. | Drama/Comedy presents engaging stories.
+22:00-22:30 | SECURITY FORUM | Experts discuss crime prevention, public safety. | Security Forum brings together informed voices.
+22:30-00:00 | LATE NIGHT MOVIES | Settle in for late-night cinema. | Late Night Movies offers a varied selection of films.
+
+DATE=2026-09-29 (Tuesday)
+00:00-04:00 | LATE NIGHT MOVIES | Settle in for late-night cinema. | Late Night Movies offers a varied selection of films.
+04:00-04:30 | JUST JAZZ | Relax with a carefully selected mix of jazz. | Just Jazz celebrates the depth, freedom and sophistication of jazz music.
+04:30-05:00 | NAKED SICENCE | Science and technology are explored. | Naked Science investigates the forces, discoveries and mysteries.
+05:00-05:30 | TRAVELS | Explore remarkable destinations. | Travels takes viewers on an inspiring journey.
+05:30-06:00 | Musicals | Enjoy memorable songs, performances. | Musicals brings together captivating songs.
+06:00-06:30 | Global News | Stay informed with major international headlines. | Global News provides timely coverage.
+06:30-07:00 | WORKOUT | Accessible exercise routines. | Workout offers guided exercise sessions.
+07:00-07:30 | MORNING DEVOTION | Begin the day with Scripture, prayer. | Morning Devotion offers a peaceful start.
+07:30-08:00 | Hour Of Mercy | A dedicated time of prayer. | Hour of Mercy invites viewers into worship.
+08:00-08:30 | Health Care | Practical health information. | Health Care explores important topics.
+08:30-09:00 | CELEB CHAT ROOM | Celebrity guests share candid stories. | Celeb Chat Room brings viewers closer.
+09:00-09:30 | Grand Design | Follow ambitious homebuilders. | Grand Designs follows people.
+09:30-10:00 | FOOD COURT | Discover foods from across the globe. | Food Court showcases food.
+10:00-10:30 | ARTIN25 | ARTIN25 on NuView TV. | ARTIN25 is part of NuView TV's programming.
+10:30-11:00 | BORDER CONTROL | Follow border officers. | Border Control offers an inside look.
+11:00-11:30 | TECK REVIEW | Reviews of the latest gadgets. | Tech Review examines the latest gadgets.
+11:30-12:30 | MOVIE @ NOON | Enjoy a midday movie. | Movie at Noon presents a carefully selected film.
+12:30-13:00 | NATURES WORLD | Discover extraordinary wildlife. | Nature World transports viewers.
+13:00-13:30 | DRAGON DEN | Entrepreneurs pitch their business ideas. | Dragons' Den gives ambitious entrepreneurs opportunity.
+13:30-14:00 | 77 PERCENT | Young Africans discuss issues. | The 77 Percent gives Africa's young majority a platform.
+14:00-14:30 | Africa Insight | In-depth reports on African affairs. | Africa Insight goes beyond the headlines.
+14:30-15:00 | CIRCUTE | A fast-moving look at technology. | Circuit explores the people and ideas driving change.
+15:00-15:30 | THE WORLD TODAY | News, interviews and analysis. | The World Today examines important developments.
+15:30-16:00 | Mythbusters | Popular myths are tested. | MythBusters uses scientific methods.
+16:00-16:30 | Bull Riders SPORTS | Experience the excitement of bull riding. | Bull Riders Sports brings viewers close.
+16:30-17:00 | SPORTS BASKETBALL REVIEW | Highlights and analysis. | Sports Basketball Review brings highlights.
+17:00-17:30 | MLB Sports | Major League Baseball action. | MLB Sports delivers the latest action.
+17:30-18:00 | Learn French | Easy French lessons. | Learn French offers accessible lessons.
+18:00-18:30 | KIDS CARTOON | Colourful animated adventures. | Kids Cartoon presents fun-filled animated stories.
+18:30-19:30 | Parternity DNA Show | Parternity DNA Show on NuView TV. | Parternity DNA Show is part of NuView TV's programming.
+19:30-20:30 | DRAMA/COMMEDY | Enjoy entertaining stories. | Drama/Comedy presents engaging stories.
+20:30-21:00 | NEWS | NEWS on NuView TV. | NEWS is part of NuView TV's programming.
+21:00-22:00 | DRAMA/COMMEDY | Enjoy entertaining stories. | Drama/Comedy presents engaging stories.
+22:00-22:30 | SECURITY FORUM | Experts discuss crime prevention. | Security Forum brings together informed voices.
+22:30-00:00 | LATE NIGHT MOVIES | Settle in for late-night cinema. | Late Night Movies offers a varied selection of films.
+
+DATE=2026-09-30 (Wednesday)
+00:00-04:00 | LATE NIGHT MOVIES | Settle in for late-night cinema. | Late Night Movies offers a varied selection of films.
+04:00-04:30 | MOTO WEEK | Independent car reviews, road tests. | Motor Week gives viewers an informed look.
+04:30-05:00 | NAKED SICENCE | Science and technology are explored. | Naked Science investigates the forces and mysteries.
+05:00-05:30 | TRAVELS | Explore remarkable destinations. | Travels takes viewers on an inspiring journey.
+05:30-06:00 | Musicals | Enjoy memorable songs, performances. | Musicals brings together captivating songs.
+06:00-06:30 | Global News | Stay informed with major international headlines. | Global News provides timely coverage.
+06:30-07:00 | WORKOUT | Accessible exercise routines. | Workout offers guided exercise sessions.
+07:00-07:30 | Times To Revive | A faith-based outreach programme. | Time to Revive follows believers.
+07:30-08:00 | Hour Of Mercy | A dedicated time of prayer. | Hour of Mercy invites viewers.
+08:00-08:30 | Health Care | Practical health information. | Health Care explores important topics.
+08:30-09:00 | TECK REVIEW | Reviews of the latest gadgets. | Tech Review examines the latest gadgets.
+09:00-09:30 | CIRCUTE | A fast-moving look at technology. | Circuit explores the people and ideas.
+09:30-10:00 | 77 PERCENT | Young Africans discuss issues. | The 77 Percent gives Africa's young majority a platform.
+10:00-10:30 | Africa Insight | In-depth reports on African affairs. | Africa Insight goes beyond the headlines.
+10:30-11:00 | BORDER CONTROL | Follow border officers. | Border Control offers an inside look.
+11:00-11:30 | FASHION | Explore current fashion trends. | Fashion celebrates the creativity.
+11:30-12:00 | MOTO WEEK/MUSICALS | Independent car reviews and motoring news. | Motor Week gives viewers an informed look.
+12:00-13:00 | THE WORLD TODAY | News, interviews and analysis. | The World Today examines important developments.
+13:00-13:30 | Grand Design | Follow ambitious homebuilders. | Grand Designs follows people.
+13:30-14:00 | ARTIN25 | ARTIN25 on NuView TV. | ARTIN25 is part of NuView TV's programming.
+14:00-15:00 | NATURE WORLD | Discover extraordinary wildlife, landscapes. | Nature World transports viewers.
+15:00-15:30 | DRAGON DEN | Entrepreneurs pitch their business ideas. | Dragons' Den gives ambitious entrepreneurs.
+15:30-16:00 | TECK REVIEW | Reviews of the latest gadgets. | Tech Review examines the latest gadgets.
+16:00-17:00 | SO REAL A BOSS | An unscripted look at ambition. | So Real: A Boss follows determined personalities.
+17:00-17:30 | SCIENCE MAX | Big experiments turn everyday science into spectacular challenges. | Science Max takes familiar classroom experiments.
+17:30-18:00 | KIDS FIND OUT | Curious young viewers discover fun facts. | Kids Find Out makes learning enjoyable.
+18:00-18:30 | Learn French | Easy French lessons. | Learn French offers accessible lessons.
+18:30-20:00 | KIDS CARTOON | Colourful animated adventures. | Kids Cartoon presents fun-filled animated stories.
+20:00-21:00 | Parternity DNA Show | Parternity DNA Show on NuView TV. | Parternity DNA Show is part of NuView TV's programming.
+21:00-22:30 | DRAMA/COMMEDY | Enjoy entertaining stories. | Drama/Comedy presents engaging stories.
+22:30-23:00 | NEWS | NEWS on NuView TV. | NEWS is part of NuView TV's programming.
+23:00-23:30 | DRAMA | Enjoy entertaining stories. | Drama presents engaging stories.
+23:30-00:00 | SECURITY FORUM | Experts discuss crime prevention. | Security Forum brings together informed voices.
+`;
+
+        // Parse EPG Data
+        let scheduleData = [];
+        let days = [];
+        
+        function parseEPG() {
+            const lines = rawData.trim().split('\n');
+            let currentDateStr = '';
+            let currentDayName = '';
+            
+            lines.forEach(line => {
+                line = line.trim();
+                if (!line) return;
+                
+                if (line.startsWith('DATE=')) {
+                    // Extract DATE=2026-09-25 (Friday)
+                    const match = line.match(/DATE=([0-9-]+)\s+\(([^)]+)\)/);
+                    if (match) {
+                        currentDateStr = match[1];
+                        currentDayName = match[2];
+                        days.push({ date: currentDateStr, dayName: currentDayName });
+                    }
+                } else {
+                    const parts = line.split('|').map(s => s.trim());
+                    if (parts.length >= 4) {
+                        const timeStr = parts[0];
+                        const title = parts[1];
+                        const shortDesc = parts[2];
+                        const longDesc = parts[3];
+                        
+                        const [start, end] = timeStr.split('-');
+                        
+                        scheduleData.push({
+                            date: currentDateStr,
+                            startTime: start,
+                            endTime: end,
+                            title: title,
+                            shortDesc: shortDesc,
+                            longDesc: longDesc
+                        });
+                    }
+                }
+            });
+        }
+        
+        parseEPG();
+
+        // State
+        let currentSelectedDate = days.length > 0 ? days[0].date : '';
+        let searchQuery = '';
+
+        // Time helpers
+        function getSASTTime() {
+            const now = new Date();
+            // Convert local time to SAST (UTC+2)
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const sastTime = new Date(utc + (3600000 * 2));
+            return sastTime;
+        }
+
+        function formatTime(date) {
+            return date.toTimeString().split(' ')[0];
+        }
+
+        function calculateDuration(start, end) {
+            let [sH, sM] = start.split(':').map(Number);
+            let [eH, eM] = end.split(':').map(Number);
+            
+            if (eH === 0 && eM === 0) eH = 24; // Midnight
+            
+            let durMins = (eH * 60 + eM) - (sH * 60 + sM);
+            if (durMins < 0) durMins += 24 * 60; // Just in case it rolls over
+            
+            const h = Math.floor(durMins / 60);
+            const m = durMins % 60;
+            
+            if (h > 0 && m > 0) return \`\${h}h \${m}m\`;
+            if (h > 0) return \`\${h}h\`;
+            return \`\${m}m\`;
+        }
+
+        function isCurrentlyAiring(show, sastTime) {
+            // Check if show is on current date
+            const showDate = new Date(show.date);
+            const currDate = new Date(sastTime);
+            
+            if (showDate.getFullYear() !== currDate.getFullYear() || 
+                showDate.getMonth() !== currDate.getMonth() || 
+                showDate.getDate() !== currDate.getDate()) {
+                return false;
+            }
+
+            const currentMinutes = sastTime.getHours() * 60 + sastTime.getMinutes();
+            
+            let [sH, sM] = show.startTime.split(':').map(Number);
+            let [eH, eM] = show.endTime.split(':').map(Number);
+            
+            if (eH === 0 && eM === 0) eH = 24;
+            
+            const startMins = sH * 60 + sM;
+            const endMins = eH * 60 + eM;
+            
+            return currentMinutes >= startMins && currentMinutes < endMins;
+        }
+
+        // UI Updates
+        function updateClock() {
+            const sastTime = getSASTTime();
+            document.getElementById('liveClock').textContent = formatTime(sastTime);
+        }
+
+        function updateNowPlaying() {
+            const sastTime = getSASTTime();
+            let currentShow = null;
+            
+            for (const show of scheduleData) {
+                if (isCurrentlyAiring(show, sastTime)) {
+                    currentShow = show;
+                    break;
+                }
+            }
+
+            const banner = document.getElementById('nowPlayingBanner');
+            if (currentShow) {
+                banner.innerHTML = \`
+                    <div class="now-playing-header">
+                        <div class="live-indicator"></div>
+                        LIVE NOW
+                    </div>
+                    <div class="np-title">\${currentShow.title}</div>
+                    <div class="np-time">\${currentShow.startTime} - \${currentShow.endTime}</div>
+                    <div class="np-desc">\${currentShow.shortDesc}</div>
+                \`;
+            } else {
+                banner.innerHTML = \`
+                    <div class="now-playing-header">OFF AIR</div>
+                    <div class="np-title">NuView TV</div>
+                    <div class="np-desc">No program information available for the current time.</div>
+                \`;
+            }
+        }
+
+        function renderTabs() {
+            const tabsContainer = document.getElementById('dayTabs');
+            tabsContainer.innerHTML = '';
+            
+            // Auto-select today if it falls within our schedule range
+            const sastTime = getSASTTime();
+            const todayStr = \`\${sastTime.getFullYear()}-\${String(sastTime.getMonth()+1).padStart(2,'0')}-\${String(sastTime.getDate()).padStart(2,'0')}\`;
+            
+            if (!currentSelectedDate && days.some(d => d.date === todayStr)) {
+                currentSelectedDate = todayStr;
+            } else if (!currentSelectedDate) {
+                currentSelectedDate = days[0].date;
+            }
+
+            days.forEach(day => {
+                const isToday = day.date === todayStr;
+                const dateObj = new Date(day.date);
+                const displayDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                
+                const btn = document.createElement('button');
+                btn.className = \`tab-btn \${day.date === currentSelectedDate ? 'active' : ''}\`;
+                btn.innerHTML = \`
+                    <span class="tab-day">\${isToday ? 'Today' : day.dayName}</span>
+                    <span class="tab-date">\${displayDate}</span>
+                \`;
+                
+                btn.onclick = () => {
+                    currentSelectedDate = day.date;
+                    renderTabs();
+                    renderGrid();
+                };
+                
+                tabsContainer.appendChild(btn);
+            });
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('scheduleGrid');
+            grid.innerHTML = '';
+            
+            const sastTime = getSASTTime();
+            
+            const filteredShows = scheduleData.filter(show => {
+                const matchesDate = show.date === currentSelectedDate;
+                const matchesSearch = show.title.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesDate && matchesSearch;
+            });
+
+            if (filteredShows.length === 0) {
+                grid.innerHTML = \`<div class="no-results">No programs found for this selection.</div>\`;
+                return;
+            }
+
+            filteredShows.forEach(show => {
+                const isLive = isCurrentlyAiring(show, sastTime);
+                const duration = calculateDuration(show.startTime, show.endTime);
+                
+                const card = document.createElement('div');
+                card.className = \`show-card \${isLive ? 'is-live' : ''}\`;
+                
+                let liveBadge = isLive ? \`<div class="live-badge">LIVE</div>\` : '';
+                
+                card.innerHTML = \`
+                    <div class="show-time">
+                        \${show.startTime}
+                        <span class="show-duration">\${duration}</span>
+                    </div>
+                    <div class="show-info">
+                        \${liveBadge}
+                        <div class="show-title">\${show.title}</div>
+                        <div class="show-desc">\${show.shortDesc}</div>
+                    </div>
+                \`;
+                
+                card.onclick = () => openModal(show);
+                grid.appendChild(card);
+            });
+        }
+
+        // Modal Logic
+        const modal = document.getElementById('showModal');
+        const closeModalBtn = document.getElementById('closeModal');
+
+        function openModal(show) {
+            document.getElementById('modalTitle').textContent = show.title;
+            document.getElementById('modalTime').textContent = \`\${show.date} | \${show.startTime} - \${show.endTime}\`;
+            document.getElementById('modalShortDesc').textContent = show.shortDesc;
+            document.getElementById('modalLongDesc').textContent = show.longDesc;
+            
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+        }
+
+        closeModalBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        // Search logic
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            renderGrid();
+        });
+
+        // Initialization & Intervals
+        updateClock();
+        updateNowPlaying();
+        renderTabs();
+        renderGrid();
+
+        setInterval(() => {
+            updateClock();
+        }, 1000);
+
+        setInterval(() => {
+            updateNowPlaying();
+            // Re-render grid to update live badge if needed
+            if (searchQuery === '') renderGrid(); 
+        }, 60000);
+
+    </script>
+</body>
+</html>
